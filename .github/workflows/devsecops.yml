@@ -38,4 +38,6 @@ jobs:
         if: success()
         run: |
           sleep 30
-          docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://mmtnc-app.onrender.com || true
+          mkdir -p zap_reports
+          chmod 777 zap_reports
+          docker run -v $(pwd):/zap/wrk:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://mmtnc-app.onrender.com -r report.html 

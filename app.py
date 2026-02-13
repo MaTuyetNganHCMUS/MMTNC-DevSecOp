@@ -74,7 +74,6 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-# Khởi tạo database để không bị sập ứng dụng
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -84,22 +83,19 @@ def init_db():
 
 @app.route('/')
 def home():
-    # SỬA LỖI 404: Tạo trang chủ để ZAP Spider có thể bắt đầu quét
-    return '<h1>Hệ thống DevSecOps Live!</h1><p>Xem file: <a href="/read?file=requirements.txt">Tại đây</a></p>'
+    return '<h1>Hệ thống DevSecOps - Live</h1><p><a href="/read?file=requirements.txt">Kiểm tra file</a></p>'
 
 @app.route('/read')
 def read_file():
-    # LỖI BẢO MẬT DAST: Path Traversal (Cố tình để lộ để ZAP báo lỗi)
-    # Hacker có thể truyền vào ?file=../../etc/passwd
+    # LỖI BẢO MẬT DAST: Path Traversal (Cố tình để ZAP tấn công)
     filename = request.args.get('file')
     try:
         with open(filename, 'r') as f:
             return f.read()
     except Exception as e:
-        return f"Lỗi: {str(e)}", 404
+        return f"Error: {str(e)}", 404
 
 if __name__ == "__main__":
     init_db()
     port = int(os.environ.get("PORT", 10000))
-    # # nosec: Để Bandit không báo đỏ lỗi B104, giúp Pipeline chạy tới bước DAST
     app.run(host='0.0.0.0', port=port)  # nosec

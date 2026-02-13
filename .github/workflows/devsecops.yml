@@ -2,20 +2,21 @@ name: DevSecOps Cloud Pipeline
 
 on:
   push:
-    branches: [ "main" ] # Tự động chạy khi bạn push code lên GitHub
+    branches: [ "main" ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Code
-        uses: actions/checkout@v4 # Đã cập nhật phiên bản mới nhất
+        uses: actions/checkout@v4
 
       - name: 2. SAST Scan (Bandit)
         run: |
           pip install bandit
-          # Quét lỗi bảo mật và xuất báo cáo
-          bandit -r . -f txt -o report_sast.txt || true 
+          # -r .: quét toàn bộ thư mục
+          # -v: hiển thị chi tiết lỗi trong Log
+          bandit -r . -v
 
       - name: 3. Login to Docker Hub
         uses: docker/login-action@v3
@@ -25,12 +26,16 @@ jobs:
 
       - name: 4. Build and Push Docker Image
         run: |
-          # Build image với tag là latest
           docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mmtnc-app:latest .
-          # Đẩy image lên Docker Hub (Sửa lỗi thụt lề ở đây)
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/mmtnc-app:latest
 
       - name: 5. Webhook Gateway (Deploy to Render)
         if: success()
         run: |
           curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+
+      - name: 6. DAST Scan (OWASP ZAP)
+        if: success()
+        run: |
+          sleep 30
+          docker run -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://mmtnc-app.onrender.com

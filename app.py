@@ -1,23 +1,65 @@
+# import sqlite3
+# import os
+# from flask import Flask, request
+
+# app = Flask(__name__)
+
+# @app.route('/login')
+# def login():
+#     username = request.args.get('username')
+    
+#     # LỖI BẢO MẬT 1 (SAST - B608): SQL Injection
+#     # Bandit sẽ phát hiện việc cộng chuỗi trực tiếp vào query
+#     query = "SELECT * FROM users WHERE username = '" + username + "'"
+    
+#     # LỖI BẢO MẬT 2 (SAST - B105): Hardcoded Password
+#     # Bandit sẽ phát hiện mật khẩu nằm chình ình trong code
+#     db_password = "admin_password_123" 
+    
+#     return f"Đang kiểm tra user: {username} với query: {query}"
+
+# if __name__ == "__main__":
+#     port = int(os.environ.get("PORT", 10000))
+#     app.run(host='0.0.0.0', port=port)
+
+
+# file sau khi chỉnh sửa lỗi SAST
 import sqlite3
 import os
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# Hàm khởi tạo database mẫu (để app có dữ liệu chạy thực tế)
+def init_db():
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT)')
+    cursor.execute("INSERT OR IGNORE INTO users (id, username) VALUES (1, 'admin')")
+    conn.commit()
+    conn.close()
+
 @app.route('/login')
 def login():
-    username = request.args.get('username')
+    username = request.args.get('username', 'guest')
     
-    # LỖI BẢO MẬT 1 (SAST - B608): SQL Injection
-    # Bandit sẽ phát hiện việc cộng chuỗi trực tiếp vào query
-    query = "SELECT * FROM users WHERE username = '" + username + "'"
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
     
-    # LỖI BẢO MẬT 2 (SAST - B105): Hardcoded Password
-    # Bandit sẽ phát hiện mật khẩu nằm chình ình trong code
-    db_password = "admin_password_123" 
+    # --- ĐÃ SỬA LỖI SQL INJECTION ---
+    # Sử dụng Parameterized Query với dấu "?"
+    query = "SELECT username FROM users WHERE username = ?"
+    cursor.execute(query, (username,))
+    user = cursor.fetchone()
+    conn.close()
     
-    return f"Đang kiểm tra user: {username} với query: {query}"
+    if user:
+        return jsonify({"status": "success", "user": user[0]})
+    return jsonify({"status": "error", "message": "User not found"}), 404
 
 if __name__ == "__main__":
+    init_db()
+    # --- ĐÃ SỬA LỖI PORT TRÊN RENDER ---
+    # Lấy cổng từ môi trường (PORT) để không bị lỗi "Exited early"
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)

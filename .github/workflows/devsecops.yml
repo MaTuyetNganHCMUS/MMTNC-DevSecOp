@@ -38,6 +38,7 @@ jobs:
         if: success()
         run: |
           sleep 30
-          mkdir -p zap_reports
-          chmod 777 zap_reports
+          # Cap quyen ghi cho thu muc de Docker khong bi loi Permission
+          chmod -R 777 .
+          # Chay ZAP voi volume mapping dung cach
           docker run -v $(pwd):/zap/wrk:rw -t ghcr.io/zaproxy/zaproxy:stable zap-baseline.py -t https://mmtnc-app.onrender.com -r report.html 

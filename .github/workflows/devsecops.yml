@@ -30,7 +30,7 @@ jobs:
           # Đẩy image lên Docker Hub (Sửa lỗi thụt lề ở đây)
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/mmtnc-app:latest
 
-      - name: 5. Webhook Gateway (Deploy to Render)
-        if: success()
-        run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      # - name: 5. Webhook Gateway (Deploy to Render)
+      #   if: success()
+      #   run: |
+      #     curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
